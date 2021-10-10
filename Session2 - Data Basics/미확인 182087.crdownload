@@ -1,0 +1,183 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[12]:
+
+
+### 1. 라이브러리 선언
+
+import pandas as pd
+
+from selenium import webdriver
+
+import time
+
+### 2.웹브라우저 설정
+
+options = webdriver.ChromeOptions()
+
+options.add_argument("window-size=1920*1080")
+
+driverLoc = "./chromedriver.exe"
+
+driver = webdriver.Chrome(executable_path=driverLoc,options=options)
+
+time.sleep(3)
+
+# 브라우저 내 액션
+
+# 구글로 이동
+
+from selenium.webdriver.common.keys import Keys
+
+googleUrl = "https://www.google.com"
+
+driver.get(googleUrl)
+
+time.sleep(3)
+
+googleSearchXpath = "/html/body/div[1]/div[3]/form/div[1]/div[1]/div[1]/div/div[2]/input"
+
+#웹사이트 검색
+
+googleSearchBox = driver.find_element_by_xpath(googleSearchXpath)
+
+searchKeyword = "후쿠부쿠로"
+
+googleSearchBox.send_keys(searchKeyword)
+
+googleSearchBox.send_keys(Keys.ENTER)
+
+time.sleep(3)
+
+# 웹사이트 이동
+
+webBtnXpath = '//*[@id="rso"]/div/div[1]/div/div/div/div[1]/a/h3'
+
+webBtn = driver.find_element_by_xpath(webBtnXpath)
+
+webBtn.click()
+
+#웹사이트 내 클릭
+
+time.sleep(3)
+
+bestBtnXpath = '//*[@id="cate4"]/a/span'
+
+bestBtn = driver.find_element_by_xpath(bestBtnXpath)
+
+bestBtn.click()
+time.sleep(3)
+
+### 5. 페이지 URL가져오기
+
+finalUrl = driver.current_url
+
+# 라이브러리 선언
+import pandas as pd
+from bs4 import BeautifulSoup 
+import requests 
+
+#URL 선언 및 접속
+
+headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:71.0) Gecko/20100101 Firefox/71.0'}
+data=requests.get(finalUrl,headers=headers)
+data.encoding = "utf8"
+data.text
+html = data.text
+htmlObj = BeautifulSoup(html, "html.parser")
+
+#태그 내 속성정보 수집
+priceTable = htmlObj.find(name="div", attrs= {'class':'template_width2'})
+
+boxTag = priceTable.findAll(name="div", attrs={'class':'box'})
+
+titleTag = boxTag[0].find(name="span", attrs={'style':'font-size:12px;color:#555555;'})
+
+priceTag = boxTag[0].find(name="span", attrs={'class':"price"})
+
+#리스트 선언
+titleList = []
+priceList = []
+
+for i in range(0, len(boxTag)):
+    #각 태그정보 수집
+    nameTag = boxTag[i].find(name="span", attrs={'style':'font-size:12px;color:#555555;'}).text
+    wonTag = boxTag[i].find(name="span", attrs={'class':"price"}).text
+
+    # 리스트에 태그 정보 append
+    titleList.append(nameTag)
+    priceList.append(wonTag)
+ 
+
+    # 리스트 합치기
+resultDf = pd.DataFrame(zip(titleList, priceList),
+                         columns=["Title","Price"]   )
+
+resultDf
+
+resultDf.to_csv("./result.csv", encoding="UTF-8",index=False)
+
+## 메일전송 자동화
+
+# SMTP 프로토콜로드
+import smtplib
+
+# 이메일을간단하게보낼수있는라이브러리로드
+from email.message import EmailMessage
+
+
+# GMAIL 메일설정
+smtp_gmail = smtplib.SMTP('smtp.gmail.com', 587) ## 보내는 메일에 따라 다름
+# 서버연결을설정하는단계
+smtp_gmail.ehlo()
+# 연결을암호화
+smtp_gmail.starttls()
+
+#로그인
+userid = "suchoi95"       #gmail 아이디
+
+import pickle
+
+mypass = 'ekgxofpuuxyiiynk'
+
+# with open('pw.pickle', 'wb') as handle:
+#     pickle.dump(mypass, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+with open('pw.pickle', 'rb') as handle:
+    pwpickle = pickle.load(handle)
+
+smtp_gmail.login(userid, pwpickle)
+
+### csv 파일로 아이디 값을 가져와야함
+
+### 이메일 보내기
+
+msg=EmailMessage()
+
+# 제목입력
+msg['Subject']="퀴즈정보"
+
+# 내용입력
+msg.set_content("퀴즈정보")
+
+# 보내는사람
+msg['From']='suchoi95@gmail.com'
+
+# 받는사람
+msg['To'] = "suchoi95@gmail.com"
+
+# 첨부파일#1 추가
+file='result.csv'
+fp = open(file,'rb')
+file_data=fp.read()
+msg.add_attachment(file_data,
+                   maintype='text',
+                   subtype='plain',
+                   filename=file)
+
+
+# 메일전송
+smtp_gmail.send_message(msg)
+smtp_gmail.close()
+
